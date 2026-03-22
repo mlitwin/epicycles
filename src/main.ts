@@ -181,21 +181,21 @@ async function main() {
   }
 
   // Kepler planets
-  const sunPlanet     = makePlanet(sun,     { color: STYLES.sun.keplerColor,     orbitColor: STYLES.sun.keplerOrbitColor,     bodyRadius: STYLES.sun.bodyRadius,     glowRadius: STYLES.sun.glowRadius },     'Kep', KEPLER.earth.T)
-  const earthPlanet   = makePlanet(earth,   { color: STYLES.earth.keplerColor,   orbitColor: STYLES.earth.keplerOrbitColor,   bodyRadius: STYLES.earth.bodyRadius },   'Earth',   KEPLER.earth.T, true)
-  const mercuryPlanet = makePlanet(mercury, { color: STYLES.mercury.keplerColor, orbitColor: STYLES.mercury.keplerOrbitColor, bodyRadius: STYLES.mercury.bodyRadius }, 'Kep', KEPLER.mercury.T)
-  const venusPlanet   = makePlanet(venus,   { color: STYLES.venus.keplerColor,   orbitColor: STYLES.venus.keplerOrbitColor,   bodyRadius: STYLES.venus.bodyRadius },   'Kep', KEPLER.venus.T)
-  const marsPlanet    = makePlanet(mars,    { color: STYLES.mars.keplerColor,    orbitColor: STYLES.mars.keplerOrbitColor,    bodyRadius: STYLES.mars.bodyRadius },    'Kep', KEPLER.mars.T)
-  const jupiterPlanet = makePlanet(jupiter, { color: STYLES.jupiter.keplerColor, orbitColor: STYLES.jupiter.keplerOrbitColor, bodyRadius: STYLES.jupiter.bodyRadius }, 'Kep', KEPLER.jupiter.T)
-  const saturnPlanet  = makePlanet(saturn,  { color: STYLES.saturn.keplerColor,  orbitColor: STYLES.saturn.keplerOrbitColor,  bodyRadius: STYLES.saturn.bodyRadius },  'Kep', KEPLER.saturn.T)
+  const sunPlanet     = makePlanet(sun,     { color: STYLES.sun.keplerColor,     orbitColor: STYLES.sun.keplerOrbitColor,     bodyRadius: STYLES.sun.bodyRadius,     glowRadius: STYLES.sun.glowRadius },     'Sun (Kep)',     KEPLER.earth.T)
+  const earthPlanet   = makePlanet(earth,   { color: STYLES.earth.keplerColor,   orbitColor: STYLES.earth.keplerOrbitColor,   bodyRadius: STYLES.earth.bodyRadius },   'Earth',         KEPLER.earth.T, true)
+  const mercuryPlanet = makePlanet(mercury, { color: STYLES.mercury.keplerColor, orbitColor: STYLES.mercury.keplerOrbitColor, bodyRadius: STYLES.mercury.bodyRadius }, 'Mercury (Kep)', KEPLER.mercury.T)
+  const venusPlanet   = makePlanet(venus,   { color: STYLES.venus.keplerColor,   orbitColor: STYLES.venus.keplerOrbitColor,   bodyRadius: STYLES.venus.bodyRadius },   'Venus (Kep)',   KEPLER.venus.T)
+  const marsPlanet    = makePlanet(mars,    { color: STYLES.mars.keplerColor,    orbitColor: STYLES.mars.keplerOrbitColor,    bodyRadius: STYLES.mars.bodyRadius },    'Mars (Kep)',    KEPLER.mars.T)
+  const jupiterPlanet = makePlanet(jupiter, { color: STYLES.jupiter.keplerColor, orbitColor: STYLES.jupiter.keplerOrbitColor, bodyRadius: STYLES.jupiter.bodyRadius }, 'Jupiter (Kep)', KEPLER.jupiter.T)
+  const saturnPlanet  = makePlanet(saturn,  { color: STYLES.saturn.keplerColor,  orbitColor: STYLES.saturn.keplerOrbitColor,  bodyRadius: STYLES.saturn.bodyRadius },  'Saturn (Kep)',  KEPLER.saturn.T)
 
   // Ptolemaic planets
-  const ptolSunPlanet     = makePlanet(ptolSun,     { color: STYLES.sun.ptolemyColor,     orbitColor: STYLES.sun.ptolemyOrbitColor,     bodyRadius: STYLES.sun.bodyRadius - 3,     glowRadius: 12 }, 'Pto', PTOLEMY.sun.samplePeriod)
-  const ptolMercuryPlanet = makePlanet(ptolMercury, { color: STYLES.mercury.ptolemyColor, orbitColor: STYLES.mercury.ptolemyOrbitColor, bodyRadius: STYLES.mercury.bodyRadius },     'Pto', MERCURY_PTOLEMY.samplePeriod)
-  const ptolVenusPlanet   = makePlanet(ptolVenus,   { color: STYLES.venus.ptolemyColor,   orbitColor: STYLES.venus.ptolemyOrbitColor,   bodyRadius: STYLES.venus.bodyRadius },       'Pto', PTOLEMY.venus.samplePeriod)
-  const ptolMarsPlanet    = makePlanet(ptolMars,    { color: STYLES.mars.ptolemyColor,    orbitColor: STYLES.mars.ptolemyOrbitColor,    bodyRadius: STYLES.mars.bodyRadius },        'Pto', PTOLEMY.mars.samplePeriod)
-  const ptolJupiterPlanet = makePlanet(ptolJupiter, { color: STYLES.jupiter.ptolemyColor, orbitColor: STYLES.jupiter.ptolemyOrbitColor, bodyRadius: STYLES.jupiter.bodyRadius },     'Pto', PTOLEMY.jupiter.samplePeriod)
-  const ptolSaturnPlanet  = makePlanet(ptolSaturn,  { color: STYLES.saturn.ptolemyColor,  orbitColor: STYLES.saturn.ptolemyOrbitColor,  bodyRadius: STYLES.saturn.bodyRadius },      'Pto', PTOLEMY.saturn.samplePeriod)
+  const ptolSunPlanet     = makePlanet(ptolSun,     { color: STYLES.sun.ptolemyColor,     orbitColor: STYLES.sun.ptolemyOrbitColor,     bodyRadius: STYLES.sun.bodyRadius - 3,     glowRadius: 12 }, 'Sun (Pto)',     PTOLEMY.sun.samplePeriod)
+  const ptolMercuryPlanet = makePlanet(ptolMercury, { color: STYLES.mercury.ptolemyColor, orbitColor: STYLES.mercury.ptolemyOrbitColor, bodyRadius: STYLES.mercury.bodyRadius },     'Mercury (Pto)', MERCURY_PTOLEMY.samplePeriod)
+  const ptolVenusPlanet   = makePlanet(ptolVenus,   { color: STYLES.venus.ptolemyColor,   orbitColor: STYLES.venus.ptolemyOrbitColor,   bodyRadius: STYLES.venus.bodyRadius },       'Venus (Pto)',   PTOLEMY.venus.samplePeriod)
+  const ptolMarsPlanet    = makePlanet(ptolMars,    { color: STYLES.mars.ptolemyColor,    orbitColor: STYLES.mars.ptolemyOrbitColor,    bodyRadius: STYLES.mars.bodyRadius },        'Mars (Pto)',    PTOLEMY.mars.samplePeriod)
+  const ptolJupiterPlanet = makePlanet(ptolJupiter, { color: STYLES.jupiter.ptolemyColor, orbitColor: STYLES.jupiter.ptolemyOrbitColor, bodyRadius: STYLES.jupiter.bodyRadius },     'Jupiter (Pto)', PTOLEMY.jupiter.samplePeriod)
+  const ptolSaturnPlanet  = makePlanet(ptolSaturn,  { color: STYLES.saturn.ptolemyColor,  orbitColor: STYLES.saturn.ptolemyOrbitColor,  bodyRadius: STYLES.saturn.bodyRadius },      'Saturn (Pto)',  PTOLEMY.saturn.samplePeriod)
 
   const planets = [
     sunPlanet, earthPlanet, mercuryPlanet, venusPlanet, marsPlanet, jupiterPlanet, saturnPlanet,
@@ -204,12 +204,12 @@ async function main() {
 
   // Connecting lines between Keplerian and Ptolemaic counterparts
   const pairs = [
-    new PlanetPair(scene, sunPlanet,     ptolSunPlanet,     'Sun',     STYLES.sun.keplerColor),
-    new PlanetPair(scene, mercuryPlanet, ptolMercuryPlanet, 'Mercury', STYLES.mercury.keplerColor),
-    new PlanetPair(scene, venusPlanet,   ptolVenusPlanet,   'Venus',   STYLES.venus.keplerColor),
-    new PlanetPair(scene, marsPlanet,    ptolMarsPlanet,    'Mars',    STYLES.mars.keplerColor),
-    new PlanetPair(scene, jupiterPlanet, ptolJupiterPlanet, 'Jupiter', STYLES.jupiter.keplerColor),
-    new PlanetPair(scene, saturnPlanet,  ptolSaturnPlanet,  'Saturn',  STYLES.saturn.keplerColor),
+    new PlanetPair(scene, sunPlanet,     ptolSunPlanet),
+    new PlanetPair(scene, mercuryPlanet, ptolMercuryPlanet),
+    new PlanetPair(scene, venusPlanet,   ptolVenusPlanet),
+    new PlanetPair(scene, marsPlanet,    ptolMarsPlanet),
+    new PlanetPair(scene, jupiterPlanet, ptolJupiterPlanet),
+    new PlanetPair(scene, saturnPlanet,  ptolSaturnPlanet),
   ]
 
   // ---------------------------------------------------------------------------
