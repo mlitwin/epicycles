@@ -238,11 +238,22 @@ async function main() {
   })
 
   // ---------------------------------------------------------------------------
+  // Speed slider
+  // ---------------------------------------------------------------------------
+  const speedSlider = document.getElementById('speed-slider') as HTMLInputElement
+  const speedLabel  = document.getElementById('speed-label')  as HTMLSpanElement
+  let speed = 1
+  speedSlider.addEventListener('input', () => {
+    speed = parseFloat(speedSlider.value)
+    speedLabel.textContent = `${speed.toFixed(1)}×`
+  })
+
+  // ---------------------------------------------------------------------------
   // Animation loop
   // ---------------------------------------------------------------------------
   let elapsed = 0
   app.ticker.add((ticker) => {
-    elapsed += ticker.deltaMS / 1000
+    elapsed += (ticker.deltaMS / 1000) * speed
     for (const p of planets) p.update(elapsed)
     for (const pair of pairs) pair.update()
   })
