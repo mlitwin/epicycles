@@ -1,5 +1,7 @@
 # Epicycles
 
+**Live demo: [antoninus.org/epicycles/](https://antoninus.org/epicycles/)**
+
 An interactive animation comparing Kepler's heliocentric model against Ptolemy's geocentric model for the classical planets (Mercury, Venus, Mars, Jupiter, Saturn).
 
 Built with [Vite](https://vitejs.dev/), TypeScript, and [PixiJS](https://pixijs.com/).
@@ -33,7 +35,7 @@ Distances are in AU. A log-radial transform is applied so all planets fit on scr
 ```bash
 npm install
 npm run dev      # local dev server
-npm run build    # production build → docs/
+npm run build    # production build → dist/
 npm run preview  # preview the build
 ```
 
