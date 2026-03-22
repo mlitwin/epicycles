@@ -1,118 +1,243 @@
-import { Application, Container, Graphics, Text, TextStyle } from 'pixi.js'
-import { solveKepler, eccentricAnomalyToPosition } from './kepler'
-
-// --- Orbital parameters ---
-const a = 220          // semi-major axis (px)
-const b = 160          // semi-minor axis (px)
-const c = Math.sqrt(a * a - b * b)  // focal distance from ellipse center
-const e = c / a        // eccentricity
-const T = 6            // orbital period (seconds)
-
-// Sun is placed at the left focus: (-c, 0) relative to ellipse center.
-// Scene origin = ellipse center.
+import { Application, Container, Text, TextStyle } from 'pixi.js'
+import { KeplerOrbit } from './kepler'
+import { PtolemaicOrbit, MercuryOrbit } from './ptolemaic'
+import { FixedBody, OrbitalBody } from './body'
+import type { Body } from './body'
+import { Planet } from './planet'
+import { LogRadialTransform } from './transform'
+import { KEPLER, PTOLEMY, MERCURY_PTOLEMY, STYLES } from './solarSystem'
 
 async function main() {
   const app = new Application()
-  await app.init({
-    background: '#07080f',
-    resizeTo: window,
-    antialias: true,
-  })
+  await app.init({ background: '#07080f', resizeTo: window, antialias: true })
   document.body.appendChild(app.canvas)
 
-  // Scene container — origin at ellipse center, centered on screen
   const scene = new Container()
   app.stage.addChild(scene)
-  scene.x = app.screen.width / 2
-  scene.y = app.screen.height / 2
-
-  window.addEventListener('resize', () => {
+  const centerScene = () => {
     scene.x = app.screen.width / 2
     scene.y = app.screen.height / 2
+  }
+  centerScene()
+  window.addEventListener('resize', centerScene)
+
+  // --- Coordinate transform: AU → screen pixels ---
+  const transform = new LogRadialTransform({ rMin: 0.2, rMax: 12.0, pxInner: 30, pxOuter: 500 })
+
+  // ---------------------------------------------------------------------------
+  // Bodies — Keplerian (heliocentric, parent = Sun)
+  // ---------------------------------------------------------------------------
+  const sun = new FixedBody('Sun')
+
+  const earthOrbit   = new KeplerOrbit(KEPLER.earth)
+  const mercuryOrbit = new KeplerOrbit(KEPLER.mercury)
+  const venusOrbit   = new KeplerOrbit(KEPLER.venus)
+  const marsOrbit    = new KeplerOrbit(KEPLER.mars)
+  const jupiterOrbit = new KeplerOrbit(KEPLER.jupiter)
+  const saturnOrbit  = new KeplerOrbit(KEPLER.saturn)
+
+  const earth   = new OrbitalBody('Earth',   sun, earthOrbit)
+  const mercury = new OrbitalBody('Mercury', sun, mercuryOrbit)
+  const venus   = new OrbitalBody('Venus',   sun, venusOrbit)
+  const mars    = new OrbitalBody('Mars',    sun, marsOrbit)
+  const jupiter = new OrbitalBody('Jupiter', sun, jupiterOrbit)
+  const saturn  = new OrbitalBody('Saturn',  sun, saturnOrbit)
+
+  // ---------------------------------------------------------------------------
+  // Phase calibration — align Ptolemaic positions with Keplerian at t=0
+  // ---------------------------------------------------------------------------
+
+  /**
+   * Find the deferent phase (θ) and epicycle phase that minimise the distance
+   * between the Ptolemaic planet and the geocentric Keplerian target at t=0.
+   *
+   * evalK(θ) returns the epicycle-centre K for a given equant angle θ.
+   * r is the epicycle radius; target is the desired Keplerian geocentric position.
+   */
+  function findBestPhases(
+    evalK: (θ: number) => { x: number; y: number },
+    r: number,
+    target: { x: number; y: number },
+    steps = 3600,
+  ): { phase: number; epicyclePhase: number } {
+    let bestPhase = 0
+    let bestEpicyclePhase = 0
+    let bestResidual = Infinity
+    for (let i = 0; i < steps; i++) {
+      const θ = (2 * Math.PI * i) / steps
+      const K = evalK(θ)
+      const dKT = Math.hypot(target.x - K.x, target.y - K.y)
+      const residual = r > 1e-9 ? Math.abs(dKT - r) : dKT
+      if (residual < bestResidual) {
+        bestResidual = residual
+        bestPhase = θ
+        bestEpicyclePhase = r > 1e-9 ? Math.atan2(target.y - K.y, target.x - K.x) : 0
+      }
+    }
+    return { phase: bestPhase, epicyclePhase: bestEpicyclePhase }
+  }
+
+  // Geocentric Keplerian targets at t=0
+  const earthPos0 = earth.worldPosition(0)
+  function geoTarget(body: { worldPosition(t: number): { x: number; y: number } }) {
+    const p = body.worldPosition(0)
+    return { x: p.x - earthPos0.x, y: p.y - earthPos0.y }
+  }
+
+  // Sun Ptolemaic — deferent-only eccentric (r=0)
+  const sunTarget = geoTarget(sun)
+  const sunPhases = findBestPhases((θ) => {
+    const { e, equant } = PTOLEMY.sun
+    const Δ = equant - e
+    const s = -Δ * Math.cos(θ) + Math.sqrt(PTOLEMY.sun.R ** 2 - Δ ** 2 * Math.sin(θ) ** 2)
+    return { x: equant + s * Math.cos(θ), y: s * Math.sin(θ) }
+  }, 0, sunTarget)
+
+  // Venus Ptolemaic
+  const venusTarget = geoTarget(venus)
+  const venusPhases = findBestPhases((θ) => {
+    const { R, e, equant } = PTOLEMY.venus
+    const Δ = equant - e
+    const s = -Δ * Math.cos(θ) + Math.sqrt(R ** 2 - Δ ** 2 * Math.sin(θ) ** 2)
+    return { x: equant + s * Math.cos(θ), y: s * Math.sin(θ) }
+  }, PTOLEMY.venus.r, venusTarget)
+
+  // Mars Ptolemaic
+  const marsTarget = geoTarget(mars)
+  const marsPhases = findBestPhases((θ) => {
+    const { R, e, equant } = PTOLEMY.mars
+    const Δ = equant - e
+    const s = -Δ * Math.cos(θ) + Math.sqrt(R ** 2 - Δ ** 2 * Math.sin(θ) ** 2)
+    return { x: equant + s * Math.cos(θ), y: s * Math.sin(θ) }
+  }, PTOLEMY.mars.r, marsTarget)
+
+  // Jupiter Ptolemaic
+  const jupiterTarget = geoTarget(jupiter)
+  const jupiterPhases = findBestPhases((θ) => {
+    const { R, e, equant } = PTOLEMY.jupiter
+    const Δ = equant - e
+    const s = -Δ * Math.cos(θ) + Math.sqrt(R ** 2 - Δ ** 2 * Math.sin(θ) ** 2)
+    return { x: equant + s * Math.cos(θ), y: s * Math.sin(θ) }
+  }, PTOLEMY.jupiter.r, jupiterTarget)
+
+  // Saturn Ptolemaic
+  const saturnTarget = geoTarget(saturn)
+  const saturnPhases = findBestPhases((θ) => {
+    const { R, e, equant } = PTOLEMY.saturn
+    const Δ = equant - e
+    const s = -Δ * Math.cos(θ) + Math.sqrt(R ** 2 - Δ ** 2 * Math.sin(θ) ** 2)
+    return { x: equant + s * Math.cos(θ), y: s * Math.sin(θ) }
+  }, PTOLEMY.saturn.r, saturnTarget)
+
+  // Mercury Ptolemaic (crank model)
+  const mercuryTarget = geoTarget(mercury)
+  const mercuryPhases = findBestPhases((θ) => {
+    const { R, e } = MERCURY_PTOLEMY
+    const s = Math.sqrt(Math.max(0, R ** 2 - 4 * e ** 2 * Math.sin(θ) ** 2))
+    return { x: 2 * e + s * Math.cos(θ), y: s * Math.sin(θ) }
+  }, MERCURY_PTOLEMY.r, mercuryTarget)
+
+  // ---------------------------------------------------------------------------
+  // Bodies — Ptolemaic (geocentric, parent = Earth)
+  // ---------------------------------------------------------------------------
+  const ptolSunOrbit     = new PtolemaicOrbit({ ...PTOLEMY.sun,     ...sunPhases })
+  const ptolMercuryOrbit = new MercuryOrbit(  { ...MERCURY_PTOLEMY, ...mercuryPhases })
+  const ptolVenusOrbit   = new PtolemaicOrbit({ ...PTOLEMY.venus,   ...venusPhases })
+  const ptolMarsOrbit    = new PtolemaicOrbit({ ...PTOLEMY.mars,    ...marsPhases })
+  const ptolJupiterOrbit = new PtolemaicOrbit({ ...PTOLEMY.jupiter, ...jupiterPhases })
+  const ptolSaturnOrbit  = new PtolemaicOrbit({ ...PTOLEMY.saturn,  ...saturnPhases })
+
+  const ptolSun     = new OrbitalBody('Sun (Pto)',     earth, ptolSunOrbit)
+  const ptolMercury = new OrbitalBody('Mercury (Pto)', earth, ptolMercuryOrbit)
+  const ptolVenus   = new OrbitalBody('Venus (Pto)',   earth, ptolVenusOrbit)
+  const ptolMars    = new OrbitalBody('Mars (Pto)',    earth, ptolMarsOrbit)
+  const ptolJupiter = new OrbitalBody('Jupiter (Pto)', earth, ptolJupiterOrbit)
+  const ptolSaturn  = new OrbitalBody('Saturn (Pto)',  earth, ptolSaturnOrbit)
+
+  // ---------------------------------------------------------------------------
+  // Visuals — helper
+  // ---------------------------------------------------------------------------
+  let reference: Body = sun
+
+  function makePlanet(
+    body: Body,
+    style: { color: number; orbitColor: number; bodyRadius: number; glowRadius?: number },
+    label: string,
+    samplePeriod: number,
+    showRadiusVector = false,
+  ): Planet {
+    return new Planet(scene, body, reference, {
+      color: style.color,
+      radius: style.bodyRadius,
+      glowRadius: style.glowRadius,
+      label,
+      orbitColor: style.orbitColor,
+      showOrbitPath: true,
+      showRadiusVector,
+      samplePeriod,
+      transform,
+    })
+  }
+
+  // Kepler planets
+  const sunPlanet     = makePlanet(sun,     { color: STYLES.sun.keplerColor,     orbitColor: STYLES.sun.keplerOrbitColor,     bodyRadius: STYLES.sun.bodyRadius,     glowRadius: STYLES.sun.glowRadius },     'Sun',     KEPLER.earth.T)
+  const earthPlanet   = makePlanet(earth,   { color: STYLES.earth.keplerColor,   orbitColor: STYLES.earth.keplerOrbitColor,   bodyRadius: STYLES.earth.bodyRadius },   'Earth',   KEPLER.earth.T, true)
+  const mercuryPlanet = makePlanet(mercury, { color: STYLES.mercury.keplerColor, orbitColor: STYLES.mercury.keplerOrbitColor, bodyRadius: STYLES.mercury.bodyRadius }, 'Mercury', KEPLER.mercury.T)
+  const venusPlanet   = makePlanet(venus,   { color: STYLES.venus.keplerColor,   orbitColor: STYLES.venus.keplerOrbitColor,   bodyRadius: STYLES.venus.bodyRadius },   'Venus',   KEPLER.venus.T)
+  const marsPlanet    = makePlanet(mars,    { color: STYLES.mars.keplerColor,    orbitColor: STYLES.mars.keplerOrbitColor,    bodyRadius: STYLES.mars.bodyRadius },    'Mars',    KEPLER.mars.T)
+  const jupiterPlanet = makePlanet(jupiter, { color: STYLES.jupiter.keplerColor, orbitColor: STYLES.jupiter.keplerOrbitColor, bodyRadius: STYLES.jupiter.bodyRadius }, 'Jupiter', KEPLER.jupiter.T)
+  const saturnPlanet  = makePlanet(saturn,  { color: STYLES.saturn.keplerColor,  orbitColor: STYLES.saturn.keplerOrbitColor,  bodyRadius: STYLES.saturn.bodyRadius },  'Saturn',  KEPLER.saturn.T)
+
+  // Ptolemaic planets
+  const ptolSunPlanet     = makePlanet(ptolSun,     { color: STYLES.sun.ptolemyColor,     orbitColor: STYLES.sun.ptolemyOrbitColor,     bodyRadius: STYLES.sun.bodyRadius - 3,     glowRadius: 12 }, 'Sun (Pto)',     PTOLEMY.sun.samplePeriod)
+  const ptolMercuryPlanet = makePlanet(ptolMercury, { color: STYLES.mercury.ptolemyColor, orbitColor: STYLES.mercury.ptolemyOrbitColor, bodyRadius: STYLES.mercury.bodyRadius },     'Mercury (Pto)', MERCURY_PTOLEMY.samplePeriod)
+  const ptolVenusPlanet   = makePlanet(ptolVenus,   { color: STYLES.venus.ptolemyColor,   orbitColor: STYLES.venus.ptolemyOrbitColor,   bodyRadius: STYLES.venus.bodyRadius },       'Venus (Pto)',   PTOLEMY.venus.samplePeriod)
+  const ptolMarsPlanet    = makePlanet(ptolMars,    { color: STYLES.mars.ptolemyColor,    orbitColor: STYLES.mars.ptolemyOrbitColor,    bodyRadius: STYLES.mars.bodyRadius },        'Mars (Pto)',    PTOLEMY.mars.samplePeriod)
+  const ptolJupiterPlanet = makePlanet(ptolJupiter, { color: STYLES.jupiter.ptolemyColor, orbitColor: STYLES.jupiter.ptolemyOrbitColor, bodyRadius: STYLES.jupiter.bodyRadius },     'Jupiter (Pto)', PTOLEMY.jupiter.samplePeriod)
+  const ptolSaturnPlanet  = makePlanet(ptolSaturn,  { color: STYLES.saturn.ptolemyColor,  orbitColor: STYLES.saturn.ptolemyOrbitColor,  bodyRadius: STYLES.saturn.bodyRadius },      'Saturn (Pto)',  PTOLEMY.saturn.samplePeriod)
+
+  const planets = [
+    sunPlanet, earthPlanet, mercuryPlanet, venusPlanet, marsPlanet, jupiterPlanet, saturnPlanet,
+    ptolSunPlanet, ptolMercuryPlanet, ptolVenusPlanet, ptolMarsPlanet, ptolJupiterPlanet, ptolSaturnPlanet,
+  ]
+
+  // ---------------------------------------------------------------------------
+  // Frame toggle
+  // ---------------------------------------------------------------------------
+  const frames: Body[] = [sun, earth]
+  let frameIndex = 0
+
+  const frameLabel = new Text({
+    text: frameText(reference),
+    style: new TextStyle({ fill: 0x556677, fontSize: 11, fontFamily: 'monospace' }),
+  })
+  frameLabel.x = 12
+  frameLabel.y = 12
+  app.stage.addChild(frameLabel)
+
+  function toggleFrame() {
+    frameIndex = (frameIndex + 1) % frames.length
+    reference = frames[frameIndex]
+    for (const p of planets) p.setReference(reference)
+    frameLabel.text = frameText(reference)
+  }
+
+  window.addEventListener('keydown', (e) => {
+    if (e.key === 'f' || e.key === 'F') toggleFrame()
   })
 
-  // --- Orbit path ---
-  const orbitPath = new Graphics()
-  orbitPath.ellipse(0, 0, a, b)
-  orbitPath.stroke({ color: 0x223355, width: 1 })
-  scene.addChild(orbitPath)
-
-  // --- Radius vector (Sun → Earth line, shows Kepler's 2nd law) ---
-  const radiusVector = new Graphics()
-  scene.addChild(radiusVector)
-
-  // --- Sun at left focus ---
-  const sun = new Graphics()
-  sun.circle(0, 0, 14)
-  sun.fill(0xffe066)
-  sun.x = -c
-  sun.y = 0
-  scene.addChild(sun)
-
-  // Sun glow
-  const sunGlow = new Graphics()
-  sunGlow.circle(0, 0, 22)
-  sunGlow.fill({ color: 0xffe066, alpha: 0.15 })
-  sunGlow.x = -c
-  sunGlow.y = 0
-  scene.addChild(sunGlow)
-
-  // --- Empty right focus marker ---
-  const rightFocus = new Graphics()
-  rightFocus.circle(0, 0, 3)
-  rightFocus.fill({ color: 0x446688, alpha: 0.6 })
-  rightFocus.x = c
-  rightFocus.y = 0
-  scene.addChild(rightFocus)
-
-  // --- Earth ---
-  const earth = new Graphics()
-  earth.circle(0, 0, 7)
-  earth.fill(0x4488ff)
-  scene.addChild(earth)
-
-  // --- Labels ---
-  const labelStyle = new TextStyle({ fill: 0x8899bb, fontSize: 12, fontFamily: 'monospace' })
-
-  const sunLabel = new Text({ text: 'Sun', style: labelStyle })
-  sunLabel.x = -c + 18
-  sunLabel.y = -8
-  scene.addChild(sunLabel)
-
-  const earthLabel = new Text({ text: 'Earth', style: labelStyle })
-  scene.addChild(earthLabel)
-
-  const infoStyle = new TextStyle({ fill: 0x556677, fontSize: 11, fontFamily: 'monospace' })
-  const info = new Text({
-    text: `a=${a}px  b=${b}px  e=${e.toFixed(3)}  T=${T}s`,
-    style: infoStyle,
-  })
-  info.x = 12
-  info.y = 12
-  app.stage.addChild(info)
-
-  // --- Animation loop ---
+  // ---------------------------------------------------------------------------
+  // Animation loop
+  // ---------------------------------------------------------------------------
   let elapsed = 0
-
   app.ticker.add((ticker) => {
-    elapsed += ticker.deltaMS / 1000  // seconds
-
-    const M = ((2 * Math.PI * elapsed) / T) % (2 * Math.PI)
-    const E = solveKepler(M, e)
-    const { x, y } = eccentricAnomalyToPosition(E, a, b)
-
-    earth.x = x
-    earth.y = y
-
-    earthLabel.x = x + 10
-    earthLabel.y = y - 8
-
-    // Draw radius vector from Sun focus to Earth
-    radiusVector.clear()
-    radiusVector.moveTo(-c, 0)
-    radiusVector.lineTo(x, y)
-    radiusVector.stroke({ color: 0x334455, width: 1 })
+    elapsed += ticker.deltaMS / 1000
+    for (const p of planets) p.update(elapsed)
   })
+}
+
+function frameText(ref: Body): string {
+  return `Frame: ${ref.name}  [F] to toggle`
 }
 
 main()
