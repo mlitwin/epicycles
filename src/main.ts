@@ -23,7 +23,7 @@ async function main() {
   window.addEventListener('resize', centerScene)
 
   // --- Coordinate transform: AU → screen pixels ---
-  const transform = new LogRadialTransform({ rMin: 0.2, rMax: 12.0, pxInner: 30, pxOuter: 500 })
+  const transform = new LogRadialTransform({ rMin: 0.2, rMax: 12.0, pxInner: 30, pxOuter: 360 })
 
   // ---------------------------------------------------------------------------
   // Bodies — Keplerian (heliocentric, parent = Sun)
