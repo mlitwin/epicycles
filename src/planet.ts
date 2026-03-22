@@ -35,6 +35,9 @@ export class Planet {
   private readonly bodyGraphic: Graphics
   private readonly labelText: Text | null
 
+  /** Screen position updated each frame by update(). */
+  screenPos: { x: number; y: number } = { x: 0, y: 0 }
+
   constructor(scene: Container, body: Body, reference: Body, options: PlanetOptions) {
     const {
       color,
@@ -98,6 +101,7 @@ export class Planet {
     const ref = this.reference.worldPosition(t)
     const { x: sx, y: sy } = this.transform.apply(world.x - ref.x, world.y - ref.y)
 
+    this.screenPos = { x: sx, y: sy }
     this.bodyGraphic.x = sx
     this.bodyGraphic.y = sy
 
