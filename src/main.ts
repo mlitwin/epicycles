@@ -158,7 +158,7 @@ async function main() {
   // ---------------------------------------------------------------------------
   // Visuals — helper
   // ---------------------------------------------------------------------------
-  let reference: Body = sun
+  let reference: Body = earth
 
   function makePlanet(
     body: Body,
@@ -216,7 +216,7 @@ async function main() {
   // Frame toggle
   // ---------------------------------------------------------------------------
   const frames: Body[] = [sun, earth]
-  let frameIndex = 0
+  let frameIndex = 1
 
   const frameLabel = new Text({
     text: frameText(reference),
